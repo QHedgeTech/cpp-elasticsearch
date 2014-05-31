@@ -1,0 +1,2 @@
+Copyright (c) William WEENS and contributors.
+All rights reserved.
