@@ -19,4 +19,24 @@ Once the required features will be added, new features will come like:
 
 A documentation is stil to come as well as a "get started" page and continous intragration project with Travis.
 
-Actual version is minimal and has been developped for the needs of Q-Hedge Technologies.
+## Get Source and Build ##
+
+```
+git clone https://github.com/QHedgeTech/cpp-elasticsearch.git
+cd cpp-elasticsearch/example
+scons
+```
+For debug builds, use "scons mode=debug"
+
+Warning
+-------
+
+- Actual version is minimal and has been developped for the needs of Q-Hedge Technologies.
+- Features of C++11 are used in this code.
+
+Dependencies
+------------
+
+The current version works on Linux/MacOS platform and is POSIX compliant without any dependency. The code may still be hacked to be used on other platform or with third party tools: any JSON parser, or libcurl for the connection for instance.
+
+Although the JSON parser and the HTTP connection classes are not the purpose of this project, they are provided so this project can work as a stand-alone tool.
