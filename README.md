@@ -23,8 +23,7 @@ A documentation is stil to come as well as a "get started" page and continous in
 
 ```
 git clone https://github.com/QHedgeTech/cpp-elasticsearch.git
-mkdir workspace
-cd cpp-elasticsearch
+cd cpp-elasticsearch/example
 scons
 ```
 For debug builds, use "scons mode=debug"
