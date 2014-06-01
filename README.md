@@ -34,3 +34,10 @@ Warning
 
 - Actual version is minimal and has been developped for the needs of Q-Hedge Technologies.
 - Features of C++11 are used in this code.
+
+Dependencies
+------------
+
+The current version works on Linux/MacOS platform and is POSIX compliant without any dependency. The code may still be hacked to be used on other platform or with third party tools: any JSON parser, or libcurl for the connection for instance.
+
+Although the JSON parser and the HTTP connection classes are not the purpose of this project, they are provided so this project can work as a stand-alone tool.
