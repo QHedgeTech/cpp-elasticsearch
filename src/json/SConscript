@@ -1,0 +1,10 @@
+Import('localenv')
+localenv = localenv.Clone()
+
+#Specialize environment
+
+# build sources
+srcs = Glob('*.cpp')
+objs = localenv.Object(srcs)
+
+Return('objs')

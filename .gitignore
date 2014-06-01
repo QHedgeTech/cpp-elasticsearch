@@ -1,0 +1,5 @@
+example/scons_build/*
+example/bin/*
+*.sconsign.dblite
+*DS_Store
+*.pro.user

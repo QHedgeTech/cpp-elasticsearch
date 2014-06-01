@@ -1,0 +1,27 @@
+import glob
+import os
+
+Import('env','mode','compiler', 'project')
+localenv = env.Clone()
+localenv.Append(CPPPATH=['#src'])
+
+#holds the root of the build directory tree
+builddir = '../scons_build/' + project + '/' + compiler + '/' + mode
+
+#holds the path to the executable in the build directory
+targetpath = '../bin/' + project + '-' + mode + '-' + compiler
+
+#specify the build directory
+localenv.VariantDir(builddir, ".", duplicate=0)
+
+#Build objects
+objs = SConscript('../../src/elasticsearch/SConscript', exports = 'localenv', variant_dir=os.path.join(builddir,'elasticsearch'), duplicate=0)
+objs.append(SConscript('../../src/json/SConscript', exports = 'localenv', variant_dir=os.path.join(builddir,'json'), duplicate=0))
+objs.append(SConscript('../../src/http/SConscript', exports = 'localenv', variant_dir=os.path.join(builddir,'http'), duplicate=0))
+
+srclst = map(lambda x: builddir + '/' + x, glob.glob('*.cpp'))
+objs.append(localenv.Object(srclst))
+
+getstarted = localenv.Program(targetpath,objs)
+
+Return('getstarted')
