@@ -203,21 +203,18 @@ bool HTTP::error() {
     if( errno == 0 )
         return false;
 
+    if( errno == EWOULDBLOCK || errno == EAGAIN )
+        return false;
+
     // Socket is already connected
     if( errno == EISCONN )
         printf("Socket is already connected\n");
-
-    if( errno == EWOULDBLOCK )
-        printf("Socket EWOULDBLOCK\n");
 
     if(errno == EINVAL )
         printf("Exception caught while reading socket - Invalid argument: _sfd = %i\n", _sockfd);
 
     if( errno == ECONNREFUSED )
         printf("Couldn't connect, connection refused.\n");
-
-    if( errno == EAGAIN )
-        printf("New error from the O_NONBLOCK flag.\n");
 
     if( errno == EINPROGRESS )
         printf("This returns is often see for large ElasticSearch requests.\n");
