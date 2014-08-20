@@ -86,6 +86,12 @@ class HTTP {
             return request("GET", endUrl, data, root, result);
         }
 
+        /// Generic head request to node.
+        inline unsigned int head(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("HEAD", endUrl, data, root, result);
+        }
+
         /// Generic put request to node.
         inline unsigned int put(const char* endUrl, const char* data, Json::Object* root){
             Result result;
