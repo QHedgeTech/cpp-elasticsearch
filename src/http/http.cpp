@@ -463,9 +463,9 @@ bool HTTP::readMessage(std::string& output) {
     // Need to loop (recursion may fail because pile up over the stack for large requests.
     size_t contentLength = 0;
     bool isChunked = false;
-    int readResult;
+    Result readResult;
     do {
-        readResult = readMessage(output, contentLength, isChunked);
+        readMessage(output, contentLength, isChunked, readResult);
     } while(readResult == MORE_DATA);
 
     if(readResult == OK)
@@ -476,7 +476,7 @@ bool HTTP::readMessage(std::string& output) {
 }
 
 // Wait with select then start to read the message.
-Status HTTP::readMessage(std::string& output, size_t& contentLength, bool& isChunked) {
+void HTTP::readMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result) {
 
     /// First, use select() with a timeout value to determine when the file descriptor is ready to be read.
     assert( !error() );
@@ -504,26 +504,31 @@ Status HTTP::readMessage(std::string& output, size_t& contentLength, bool& isChu
     // Is error ?
     if(ret < 0) {
         disconnect();
-        return ERROR;
+        result = ERROR;
+        return;
     }
 
     // Is timeout ?
-    if(ret == 0)
-        return ERROR;
+    if(ret == 0) {
+        result = ERROR;
+        return;
+    }
 
     // Check error on socket
     if(FD_ISSET( fd, &errorSet)) {
         error();
-        return ERROR;
+        result = ERROR;
+        return;
     }
 
     // Is read ?
     if(FD_ISSET( fd, &readSet)) {
         // Parse message.
-        return parseMessage(output, contentLength, isChunked);
+        parseMessage(output, contentLength, isChunked, result);
+        return;
     }
 
-    return OK;
+    result = OK;
 }
 
 // Append char* to output.
@@ -562,7 +567,7 @@ size_t HTTP::appendChunk(std::string& output, char* msg, size_t msgSize) {
 }
 
 // Whole process to read the response from HTTP server.
-Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isChunked) {
+void HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result) {
 
         // Socket is ready for reading.
         char recvline[4096];
@@ -570,8 +575,10 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
 
         if(readSize <= 0) {
 
-            if(!connect())
-                return ERROR;
+            if(!connect()) {
+                result = ERROR;
+                return;
+            }
 
             if( readSize < 0 ) {
                 if(errno != (EWOULDBLOCK | EAGAIN) )
@@ -579,7 +586,8 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
                 errno = 0;
             }
 
-            return MORE_DATA;
+            result = MORE_DATA;
+            return;
         }
 
         assert(readSize <= 4095);
@@ -597,8 +605,9 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
             contentLength = appendChunk(output, recvline, readSize);
 
             // Append the message to the output.
-            if( contentLength == 0 ){
-                return OK;
+            if( contentLength == 0 ) {
+                result = OK;
+                return;
             }
         }
 
@@ -607,26 +616,29 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
 
             char* endStatus = strstr(recvline,"\r\n");
 
-            if(endStatus == NULL){
+            if(endStatus == NULL) {
                 disconnect();
-                return ERROR;
+                result = ERROR;
+                return;
             }
 
             // Extract and interpret status line.
             std::stringstream status( std::string(recvline, endStatus) );
 
             if (!status) {
-                  disconnect();
-                  return ERROR;
+                disconnect();
+                result = ERROR;
+                return;
             }
 
             std::string httpVersion;
             status >> httpVersion;
 
             if (httpVersion.substr(0, 5) != "HTTP/") {
-               disconnect();
-               return ERROR;
-             }
+                disconnect();
+                result = ERROR;
+                return;
+            }
 
             unsigned int statusCode = 0;
             status >> statusCode;
@@ -654,13 +666,15 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
                 case 400:
                     std::cout << "Status: Bad Request, you must reconsidered your request." << std::endl;
                     disconnect();
-                    return ERROR;
+                    result = ERROR;
+                    return;
 
                 // If forbidden, it's over.
                 case 403:
                     std::cout << "Status: Forbidden, you must reconsidered your request." << std::endl;
                     disconnect();
-                    return ERROR;
+                    result = ERROR;
+                    return;
 
                 // If 404 then check the message and continue to get the complete response.
                 case 404:
@@ -672,19 +686,23 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
                 case 500:
                     std::cout << " 500 but statusMessage is not \"Internal Server Error\"." << std::endl;
                     disconnect();
-                    return ERROR;
+                    result = ERROR;
+                    return;
+
                 // If unhandled state, return false.
                 default:
                     std::cout << "Weird status code: " << statusCode << std::endl;
                     disconnect();
-                    return ERROR;
+                    result = ERROR;
+                    return;
             }
 
             // Extract and interpret the header.
             char* endHeader = strstr(endStatus+2,"\r\n\r\n");
-            if(endHeader == NULL){
+            if(endHeader == NULL) {
                 disconnect();
-                return ERROR;
+                result = ERROR;
+                return;
             }
             size_t headerSize = endHeader + 4 - recvline;
 
@@ -700,18 +718,23 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
                     isChunked = true;
 
                     // If we did not get the size of the chunk read message as a chunk, go on reading.
-                    if(readSize - headerSize <= 0)
-                        return MORE_DATA;
+                    if(readSize - headerSize <= 0) {
+                        result = MORE_DATA;
+                        return;
+                    }
 
                     // If the message content the length, parse the size.
                     contentLength = appendChunk(output, endHeader + 4, readSize - headerSize);
 
-                    if(contentLength == 0)
-                        return OK;
+                    if(contentLength == 0) {
+                        result = OK;
+                        return;
+                    }
 
                 } else {
                     disconnect();
-                    return ERROR;
+                    result = ERROR;
+                    return;
                 }
             }
             // We received the content-length.
@@ -719,8 +742,10 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
                 contentLength = atoi(contentLenghtPos + 15);
 
                 // Error due to conversion may set errno.
-                if(error())
-                    return ERROR;
+                if(error()) {
+                    result = ERROR;
+                    return;
+                }
 
                 // Copy content.
                 assert( endHeader - recvline + contentLength + 4 >= (unsigned int)readSize);
@@ -733,8 +758,10 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
             readSize = read(_sockfd, nextContent, 4095);
 
             // When we did not receive the data yet. Wait with select.
-            if( readSize == 0 )
-                return MORE_DATA;
+            if( readSize == 0 ) {
+                result = MORE_DATA;
+                return;
+            }
 
             // When there is nothing more to read but the output is incomplete, wait with select.
             if( readSize < 0 ) {
@@ -742,17 +769,20 @@ Status HTTP::parseMessage(std::string& output, size_t& contentLength, bool& isCh
                 if(errno != (EWOULDBLOCK | EAGAIN) )
                     EXCEPTION("read error on socket");
                 errno = 0;
-                return MORE_DATA;
+                result = MORE_DATA;
+                return;
             }
 
             output.append(nextContent, readSize);
         }
 
         // If chunked but no size, we return until we receive the answer.
-        if(isChunked && contentLength == 0)
-            return MORE_DATA;
+        if(isChunked && contentLength == 0) {
+            result = MORE_DATA;
+            return;
+        }
 
-    return OK;
+    result = OK;
 }
 
 

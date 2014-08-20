@@ -55,7 +55,7 @@ Exception::Exception(const char* fil, int lin, T const& msg) {
     std::cerr << msg << std::endl;
 }
 
-enum Status {
+enum Result {
     OK,
     ERROR,
     MORE_DATA
@@ -118,10 +118,10 @@ class HTTP {
         bool readMessage(std::string& output);
 
         /// Wait with select then start to read the message.
-        Status readMessage(std::string& output, size_t& contentLength, bool& isChunked);
+        void readMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
 
         /// Methods to read chunked messages.
-        Status parseMessage(std::string& output, size_t& contentLength, bool& isChunked) ;
+        void parseMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
 
         /// Append the chunk message to the stream.
         size_t appendChunk(std::string& output, char* msg, size_t msgSize);
