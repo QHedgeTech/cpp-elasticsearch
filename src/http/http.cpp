@@ -460,14 +460,18 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, std
 }
 
 // Whole process to read the response from HTTP server.
-void HTTP::readMessage(std::string& output, Result& result) {
+unsigned int HTTP::readMessage(std::string& output, Result& result) {
+
+    unsigned int statusCode = 0;
 
     // Need to loop (recursion may fail because pile up over the stack for large requests.
     size_t contentLength = 0;
     bool isChunked = false;
     do {
-        readMessage(output, contentLength, isChunked, result);
+        statusCode = readMessage(output, contentLength, isChunked, result);
     } while(result == MORE_DATA);
+
+    return statusCode;
 }
 
 // Wait with select then start to read the message.

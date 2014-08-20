@@ -115,7 +115,7 @@ class HTTP {
         void disconnect();
 
         /// Whole process to read the response from HTTP server.
-        void readMessage(std::string& output, Result& result);
+        unsigned int readMessage(std::string& output, Result& result);
 
         /// Wait with select then start to read the message.
         unsigned int readMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
