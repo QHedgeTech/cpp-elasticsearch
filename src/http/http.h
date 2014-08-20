@@ -39,6 +39,7 @@ class Exception : std::exception {
     public:
         template<typename T>
         Exception(const char* fil, int lin, T const& msg);
+        virtual ~Exception() throw() {}
 
         const char* what() const throw() { return _msg.c_str(); }
 
@@ -53,6 +54,12 @@ Exception::Exception(const char* fil, int lin, T const& msg) {
     std::cerr << "Exception in "<< fil << " l. " << lin << " ->\n";
     std::cerr << msg << std::endl;
 }
+
+enum Status {
+    OK,
+    ERROR,
+    MORE_DATA
+};
 
 class HTTP {
     public:
@@ -111,10 +118,10 @@ class HTTP {
         bool readMessage(std::string& output);
 
         /// Wait with select then start to read the message.
-        int readMessage(std::string& output, size_t& contentLength, bool& isChunked);
+        Status readMessage(std::string& output, size_t& contentLength, bool& isChunked);
 
         /// Methods to read chunked messages.
-        int parseMessage(std::string& output, size_t& contentLength, bool& isChunked) ;
+        Status parseMessage(std::string& output, size_t& contentLength, bool& isChunked) ;
 
         /// Append the chunk message to the stream.
         size_t appendChunk(std::string& output, char* msg, size_t msgSize);
@@ -128,12 +135,12 @@ class HTTP {
         std::string _url;
         std::string _urn;
         int _port;
-        unsigned int _connection = 0;
-        int _sockfd = -1;
+        unsigned int _connection;
+        int _sockfd;
         struct sockaddr_in _client;
-        bool _keepAlive = false;
-        time_t _keepAliveTimeout = 60;
-        time_t _lastRequest = 0;
+        bool _keepAlive;
+        time_t _keepAliveTimeout;
+        time_t _lastRequest;
 
         /// Mutex for every request.
         std::mutex _requestMutex;

@@ -24,6 +24,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>
+#include <stdexcept>
 
 #define BACKSLASH 0x5c
 
