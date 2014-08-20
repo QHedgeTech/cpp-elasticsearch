@@ -234,15 +234,24 @@ bool HTTP::error() {
 
 // Get Json Object on web server.
 bool HTTP::request(const char* method, const char* endUrl, const char* data, Json::Object* jOutput, const char* content_type){
+    Result result;
+    request(method, endUrl, data, jOutput, result, content_type);
+    return (result == OK);
+}
+
+// Get Json Object on web server.
+void HTTP::request(const char* method, const char* endUrl, const char* data, Json::Object* jOutput, Result& result, const char* content_type){
 
     std::string output;
-    if(!request(method, endUrl, data, output, content_type)){
+    request(method, endUrl, data, output, result, content_type);
+    if(result != OK) {
 
         // Give a second chance.
         disconnect();
 
-        if(!request(method, endUrl, data, output, content_type))
-            return false;
+        request(method, endUrl, data, output, result, content_type);
+        if(result != OK)
+            return;
     }
 
     try {
@@ -252,7 +261,8 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, Jso
     }
     catch(Exception& e){
         printf("parser() failed in Getter. Exception caught: %s\n", e.what());
-        return false;
+        result = ERROR;
+        return;
     }
     catch(std::exception& e){
         printf("parser() failed in Getter. std::exception caught: %s\n", e.what());
@@ -263,7 +273,7 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, Jso
         EXCEPTION("Unknown exception.");
     }
 
-    return true;
+    result = OK;
 }
 
 // Parse the message and split if necessary.
@@ -405,6 +415,12 @@ bool HTTP::write(const std::string& outgoing) {
 
 
 bool HTTP::request(const char* method, const char* endUrl, const char* data, std::string& output, const char* content_type){
+    Result result;
+    request(method, endUrl, data, output, result, content_type);
+    return (result == OK);
+}
+
+void HTTP::request(const char* method, const char* endUrl, const char* data, std::string& output, Result& result, const char* content_type){
 
     /// Example of request.
     /// "POST /test.php HTTP/1.0\r\n"
@@ -427,18 +443,17 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, std
     assert( !error() );
     assert(output.empty());
 
-    if(!sendMessage(method, endUrl, data, content_type))
-        return false;
+    if(!sendMessage(method, endUrl, data, content_type)) {
+        result = ERROR;
+        return;
+    }
 
-    Result readResult;
-    readMessage(output, readResult);
-    if(readResult != OK) {
+    readMessage(output, result);
+    if(result != OK) {
 
         // Clear ouput in case we didn't get the full response.
         if(!output.empty())
             output.clear();
-
-        return false;
     }
 
     if(_keepAlive)
@@ -456,7 +471,7 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, std
         }
     } */
 
-    return true;
+    result = OK;
 }
 
 // Whole process to read the response from HTTP server.
