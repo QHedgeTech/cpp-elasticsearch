@@ -430,7 +430,9 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, std
     if(!sendMessage(method, endUrl, data, content_type))
         return false;
 
-    if(!readMessage(output)){
+    Result readResult;
+    readMessage(output, readResult);
+    if(readResult != OK) {
 
         // Clear ouput in case we didn't get the full response.
         if(!output.empty())
@@ -458,21 +460,14 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, std
 }
 
 // Whole process to read the response from HTTP server.
-bool HTTP::readMessage(std::string& output) {
+void HTTP::readMessage(std::string& output, Result& result) {
 
     // Need to loop (recursion may fail because pile up over the stack for large requests.
     size_t contentLength = 0;
     bool isChunked = false;
-    Result readResult;
     do {
-        readMessage(output, contentLength, isChunked, readResult);
-    } while(readResult == MORE_DATA);
-
-    if(readResult == OK)
-        return true;
-
-    // If not, there was an error somewhere.
-    return false;
+        readMessage(output, contentLength, isChunked, result);
+    } while(result == MORE_DATA);
 }
 
 // Wait with select then start to read the message.
