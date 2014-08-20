@@ -240,18 +240,20 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, Jso
 }
 
 // Get Json Object on web server.
-void HTTP::request(const char* method, const char* endUrl, const char* data, Json::Object* jOutput, Result& result, const char* content_type){
+unsigned int HTTP::request(const char* method, const char* endUrl, const char* data, Json::Object* jOutput, Result& result, const char* content_type){
+
+    unsigned int statusCode = 0;
 
     std::string output;
-    request(method, endUrl, data, output, result, content_type);
+    statusCode = request(method, endUrl, data, output, result, content_type);
     if(result != OK) {
 
         // Give a second chance.
         disconnect();
 
-        request(method, endUrl, data, output, result, content_type);
+        statusCode = request(method, endUrl, data, output, result, content_type);
         if(result != OK)
-            return;
+            return statusCode;
     }
 
     try {
@@ -262,7 +264,7 @@ void HTTP::request(const char* method, const char* endUrl, const char* data, Jso
     catch(Exception& e){
         printf("parser() failed in Getter. Exception caught: %s\n", e.what());
         result = ERROR;
-        return;
+        return statusCode;
     }
     catch(std::exception& e){
         printf("parser() failed in Getter. std::exception caught: %s\n", e.what());
@@ -274,6 +276,7 @@ void HTTP::request(const char* method, const char* endUrl, const char* data, Jso
     }
 
     result = OK;
+    return statusCode;
 }
 
 // Parse the message and split if necessary.
@@ -420,7 +423,7 @@ bool HTTP::request(const char* method, const char* endUrl, const char* data, std
     return (result == OK);
 }
 
-void HTTP::request(const char* method, const char* endUrl, const char* data, std::string& output, Result& result, const char* content_type){
+unsigned int HTTP::request(const char* method, const char* endUrl, const char* data, std::string& output, Result& result, const char* content_type){
 
     /// Example of request.
     /// "POST /test.php HTTP/1.0\r\n"
@@ -443,12 +446,14 @@ void HTTP::request(const char* method, const char* endUrl, const char* data, std
     assert( !error() );
     assert(output.empty());
 
+    unsigned int statusCode = 0;
+
     if(!sendMessage(method, endUrl, data, content_type)) {
         result = ERROR;
-        return;
+        return statusCode;
     }
 
-    readMessage(output, result);
+    statusCode = readMessage(output, result);
     if(result != OK) {
 
         // Clear ouput in case we didn't get the full response.
@@ -472,6 +477,7 @@ void HTTP::request(const char* method, const char* endUrl, const char* data, std
     } */
 
     result = OK;
+    return statusCode;
 }
 
 // Whole process to read the response from HTTP server.

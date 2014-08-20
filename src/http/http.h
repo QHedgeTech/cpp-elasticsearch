@@ -71,14 +71,14 @@ class HTTP {
         bool request(const char* method, const char* endUrl, const char* data, Json::Object* root, const char* content_type = _APPLICATION_JSON);
 
         /// Generic request that parses the result in Json::Object.
-        void request(const char* method, const char* endUrl, const char* data, Json::Object* root, Result& result, const char* content_type = _APPLICATION_JSON);
+        unsigned int request(const char* method, const char* endUrl, const char* data, Json::Object* root, Result& result, const char* content_type = _APPLICATION_JSON);
 
         /// DEPRECATED
         /// Generic request that stores result in the string.
         bool request(const char* method, const char* endUrl, const char* data, std::string& output, const char* content_type = _APPLICATION_JSON);
 
         /// Generic request that stores result in the string.
-        void request(const char* method, const char* endUrl, const char* data, std::string& output, Result& result, const char* content_type = _APPLICATION_JSON);
+        unsigned int request(const char* method, const char* endUrl, const char* data, std::string& output, Result& result, const char* content_type = _APPLICATION_JSON);
 
         /// Generic get request to node.
         inline void get(const char* endUrl, const char* data, Json::Object* root){
