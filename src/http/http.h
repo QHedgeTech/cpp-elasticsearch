@@ -81,28 +81,33 @@ class HTTP {
         unsigned int request(const char* method, const char* endUrl, const char* data, std::string& output, Result& result, const char* content_type = _APPLICATION_JSON);
 
         /// Generic get request to node.
-        inline void get(const char* endUrl, const char* data, Json::Object* root){
-            request("GET", endUrl, data, root);
+        inline unsigned int get(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("GET", endUrl, data, root, result);
         }
 
         /// Generic put request to node.
-        inline void put(const char* endUrl, const char* data, Json::Object* root){
-            request("PUT", endUrl, data, root);
+        inline unsigned int put(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("PUT", endUrl, data, root, result);
         }
 
         /// Generic post request to node.
-        inline void post(const char* endUrl, const char* data, Json::Object* root){
-            request("POST", endUrl, data, root);
+        inline unsigned int post(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("POST", endUrl, data, root, result);
         }
 
         /// Generic delete request to node.
-        inline void remove(const char* endUrl, const char* data, Json::Object* root){
-            request("DELETE", endUrl, data, root);
+        inline unsigned int remove(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("DELETE", endUrl, data, root, result);
         }
 
         /// Generic post request to node.
-        inline void rawpost(const char* endUrl, const char* data, Json::Object* root){
-            request("POST", endUrl, data, root, _APPLICATION_URLENCODED);
+        inline unsigned int rawpost(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("POST", endUrl, data, root, result, _APPLICATION_URLENCODED);
         }
 
     private:
