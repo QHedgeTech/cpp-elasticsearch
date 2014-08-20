@@ -118,10 +118,10 @@ class HTTP {
         bool readMessage(std::string& output);
 
         /// Wait with select then start to read the message.
-        void readMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
+        unsigned int readMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
 
         /// Methods to read chunked messages.
-        void parseMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
+        unsigned int parseMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
 
         /// Append the chunk message to the stream.
         size_t appendChunk(std::string& output, char* msg, size_t msgSize);
