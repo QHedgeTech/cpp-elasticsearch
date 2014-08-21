@@ -162,6 +162,11 @@ long unsigned int ElasticSearch::getDocumentCount(const char* index, const char*
     return pos;
 }
 
+// Test if index exists
+bool ElasticSearch::exist(const std::string& index){
+    return (200 == _http.head(index.c_str(), 0, 0));
+}
+
 // Test if document exists
 bool ElasticSearch::exist(const std::string& index, const std::string& type, const std::string& id){
     std::stringstream url;

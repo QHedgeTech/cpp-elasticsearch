@@ -34,7 +34,10 @@ class ElasticSearch {
         /// Delete the document by index/type.
         bool deleteAll(const char* index, const char* type);
 
-         /// Test if document exists
+         /// Test if index exists
+        bool exist(const std::string& index);
+
+		/// Test if document exists
         bool exist(const std::string& index, const std::string& type, const std::string& id);
 
         /// Get Id of document

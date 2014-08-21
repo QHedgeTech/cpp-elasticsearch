@@ -39,6 +39,7 @@ class Exception : std::exception {
     public:
         template<typename T>
         Exception(const char* fil, int lin, T const& msg);
+        virtual ~Exception() throw() {}
 
         const char* what() const throw() { return _msg.c_str(); }
 
@@ -54,40 +55,65 @@ Exception::Exception(const char* fil, int lin, T const& msg) {
     std::cerr << msg << std::endl;
 }
 
+enum Result {
+    OK,
+    ERROR,
+    MORE_DATA
+};
+
 class HTTP {
     public:
         HTTP(std::string url, bool keepAlive);
         ~HTTP();
 
+        /// DEPRECATED
         /// Generic request that parses the result in Json::Object.
         bool request(const char* method, const char* endUrl, const char* data, Json::Object* root, const char* content_type = _APPLICATION_JSON);
 
+        /// Generic request that parses the result in Json::Object.
+        unsigned int request(const char* method, const char* endUrl, const char* data, Json::Object* root, Result& result, const char* content_type = _APPLICATION_JSON);
+
+        /// DEPRECATED
         /// Generic request that stores result in the string.
         bool request(const char* method, const char* endUrl, const char* data, std::string& output, const char* content_type = _APPLICATION_JSON);
 
+        /// Generic request that stores result in the string.
+        unsigned int request(const char* method, const char* endUrl, const char* data, std::string& output, Result& result, const char* content_type = _APPLICATION_JSON);
+
         /// Generic get request to node.
-        inline void get(const char* endUrl, const char* data, Json::Object* root){
-            request("GET", endUrl, data, root);
+        inline unsigned int get(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("GET", endUrl, data, root, result);
+        }
+
+        /// Generic head request to node.
+        inline unsigned int head(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("HEAD", endUrl, data, root, result);
         }
 
         /// Generic put request to node.
-        inline void put(const char* endUrl, const char* data, Json::Object* root){
-            request("PUT", endUrl, data, root);
+        inline unsigned int put(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("PUT", endUrl, data, root, result);
         }
 
         /// Generic post request to node.
-        inline void post(const char* endUrl, const char* data, Json::Object* root){
-            request("POST", endUrl, data, root);
+        inline unsigned int post(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("POST", endUrl, data, root, result);
         }
 
         /// Generic delete request to node.
-        inline void remove(const char* endUrl, const char* data, Json::Object* root){
-            request("DELETE", endUrl, data, root);
+        inline unsigned int remove(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("DELETE", endUrl, data, root, result);
         }
 
         /// Generic post request to node.
-        inline void rawpost(const char* endUrl, const char* data, Json::Object* root){
-            request("POST", endUrl, data, root, _APPLICATION_URLENCODED);
+        inline unsigned int rawpost(const char* endUrl, const char* data, Json::Object* root){
+            Result result;
+            return request("POST", endUrl, data, root, result, _APPLICATION_URLENCODED);
         }
 
     private:
@@ -108,13 +134,13 @@ class HTTP {
         void disconnect();
 
         /// Whole process to read the response from HTTP server.
-        bool readMessage(std::string& output);
+        unsigned int readMessage(std::string& output, Result& result);
 
         /// Wait with select then start to read the message.
-        int readMessage(std::string& output, size_t& contentLength, bool& isChunked);
+        unsigned int readMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
 
         /// Methods to read chunked messages.
-        int parseMessage(std::string& output, size_t& contentLength, bool& isChunked) ;
+        unsigned int parseMessage(std::string& output, size_t& contentLength, bool& isChunked, Result& result);
 
         /// Append the chunk message to the stream.
         size_t appendChunk(std::string& output, char* msg, size_t msgSize);
@@ -128,12 +154,12 @@ class HTTP {
         std::string _url;
         std::string _urn;
         int _port;
-        unsigned int _connection = 0;
-        int _sockfd = -1;
+        unsigned int _connection;
+        int _sockfd;
         struct sockaddr_in _client;
-        bool _keepAlive = false;
-        time_t _keepAliveTimeout = 60;
-        time_t _lastRequest = 0;
+        bool _keepAlive;
+        time_t _keepAliveTimeout;
+        time_t _lastRequest;
 
         /// Mutex for every request.
         std::mutex _requestMutex;
