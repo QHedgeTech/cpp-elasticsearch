@@ -16,15 +16,6 @@ ElasticSearch::ElasticSearch(const std::string& node, bool readOnly): _http(node
 ElasticSearch::~ElasticSearch() {
 }
 
-// Refresh the index.
-void ElasticSearch::refresh(const std::string& index){
-    std::ostringstream oss;
-    oss << index << "/_refresh";
-
-    Json::Object msg;
-    _http.get(oss.str().c_str(), 0, &msg);
-}
-
 // Test connection with node.
 bool ElasticSearch::isActive() {
 
@@ -160,11 +151,6 @@ long unsigned int ElasticSearch::getDocumentCount(const char* index, const char*
         printf("We did not find \"count\" member.\n");
 
     return pos;
-}
-
-// Test if index exists
-bool ElasticSearch::exist(const std::string& index){
-    return (200 == _http.head(index.c_str(), 0, 0));
 }
 
 // Test if document exists
@@ -321,4 +307,23 @@ long ElasticSearch::search(const std::string& index, const std::string& type, co
     }
 
     return result.getValue("hits").getObject().getValue("total").getLong();
+}
+
+// Test if index exists
+bool ElasticSearch::exist(const std::string& index){
+    return (200 == _http.head(index.c_str(), 0, 0));
+}
+
+// Test if index exists
+bool ElasticSearch::createIndex(const std::string& index, const char* data){
+    return (200 == _http.put(index.c_str(), data, 0));
+}
+
+// Refresh the index.
+void ElasticSearch::refresh(const std::string& index){
+    std::ostringstream oss;
+    oss << index << "/_refresh";
+
+    Json::Object msg;
+    _http.get(oss.str().c_str(), 0, &msg);
 }
