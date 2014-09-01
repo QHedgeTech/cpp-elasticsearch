@@ -309,14 +309,26 @@ long ElasticSearch::search(const std::string& index, const std::string& type, co
     return result.getValue("hits").getObject().getValue("total").getLong();
 }
 
+        /// Delete given type (and all documents, mappings)
+bool ElasticSearch::deleteType(const std::string& index, const std::string& type){
+    std::ostringstream uri;
+    uri << index << "/" << type;
+    return (200 == _http.remove(uri.str().c_str(), 0, 0));
+}
+
 // Test if index exists
 bool ElasticSearch::exist(const std::string& index){
     return (200 == _http.head(index.c_str(), 0, 0));
 }
 
-// Test if index exists
+// Create index, optionally with data (settings, mappings etc)
 bool ElasticSearch::createIndex(const std::string& index, const char* data){
     return (200 == _http.put(index.c_str(), data, 0));
+}
+
+// Delete given index (and all types, documents, mappings)
+bool ElasticSearch::deleteIndex(const std::string& index){
+    return (200 == _http.remove(index.c_str(), 0, 0));
 }
 
 // Refresh the index.
