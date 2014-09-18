@@ -34,9 +34,6 @@ class ElasticSearch {
         /// Delete the document by index/type.
         bool deleteAll(const char* index, const char* type);
 
-         /// Test if index exists
-        bool exist(const std::string& index);
-
 		/// Test if document exists
         bool exist(const std::string& index, const std::string& type, const std::string& id);
 
@@ -64,9 +61,23 @@ class ElasticSearch {
         /// Perform a scan to get all results from a query.
         int fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
 
+    public:
+        /// Delete given type (and all documents, mappings)
+        bool deleteType(const std::string& index, const std::string& type);
+
+    public:
+        /// Test if index exists
+        bool exist(const std::string& index);
+
+        /// Create index, optionally with data (settings, mappings etc)
+        bool createIndex(const std::string& index, const char* data = NULL);
+        
+        /// Delete given index (and all types, documents, mappings)
+        bool deleteIndex(const std::string& index);
+        
         /// Refresh the index.
         void refresh(const std::string& index);
-
+    
     private:
         /// Private constructor.
         ElasticSearch();
