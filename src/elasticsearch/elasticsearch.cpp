@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cassert>
 #include <locale>
+#include <vector>
 
 ElasticSearch::ElasticSearch(const std::string& node, bool readOnly): _http(node, true), _readOnly(readOnly) {
 
@@ -309,7 +310,7 @@ long ElasticSearch::search(const std::string& index, const std::string& type, co
     return result.getValue("hits").getObject().getValue("total").getLong();
 }
 
-        /// Delete given type (and all documents, mappings)
+/// Delete given type (and all documents, mappings)
 bool ElasticSearch::deleteType(const std::string& index, const std::string& type){
     std::ostringstream uri;
     uri << index << "/" << type;
@@ -338,4 +339,90 @@ void ElasticSearch::refresh(const std::string& index){
 
     Json::Object msg;
     _http.get(oss.str().c_str(), 0, &msg);
+}
+
+// Bulk API of ES.
+bool ElasticSearch::bulk(const char* data, Json::Object& jResult) {
+	 if(_readOnly)
+		return false;
+
+	return (200 == _http.post("/_bulk", data, &jResult));
+}
+
+BulkBuilder::BulkBuilder() {}
+
+void BulkBuilder::createCommand(const std::string &op, const std::string &index, const std::string &type, const std::string &id = "") {
+	Json::Object command;
+	Json::Object commandParams;
+
+	if (id != "") {
+		commandParams.addMemberByKey("_id", id);
+	}
+
+	commandParams.addMemberByKey("_index", index);
+	commandParams.addMemberByKey("_type", type);
+
+	command.addMemberByKey(op, commandParams);
+	operations.push_back(command);
+}
+
+void BulkBuilder::index(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields) {
+	createCommand("index", index, type, id);
+	operations.push_back(fields);
+}
+
+void BulkBuilder::create(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields) {
+	createCommand("create", index, type, id);
+	operations.push_back(fields);
+}
+
+void BulkBuilder::index(const std::string &index, const std::string &type, const Json::Object &fields) {
+	createCommand("index", index, type);
+	operations.push_back(fields);
+}
+
+void BulkBuilder::create(const std::string &index, const std::string &type, const Json::Object &fields) {
+	createCommand("create", index, type);
+	operations.push_back(fields);
+}
+
+void BulkBuilder::update(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields) {
+	createCommand("update", index, type, id);
+
+	Json::Object updateFields;
+	updateFields.addMemberByKey("doc", fields);
+
+	operations.push_back(updateFields);
+}
+
+void BulkBuilder::del(const std::string &index, const std::string &type, const std::string &id) {
+	createCommand("delete", index, type, id);
+}
+
+void BulkBuilder::upsert(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields) {
+	createCommand("update", index, type, id);
+
+	Json::Object updateFields;
+	updateFields.addMemberByKey("doc", fields);
+	updateFields.addMemberByKey("doc_as_upsert", true);
+
+	operations.push_back(updateFields);
+}
+
+std::string BulkBuilder::str() {
+	std::stringstream json;
+
+	for(auto &operation : operations) {
+		json << operation.str() << std::endl;
+	}
+
+	return json.str();
+}
+
+void BulkBuilder::clear() {
+	operations.clear();
+}
+
+bool BulkBuilder::isEmpty() {
+	return operations.empty();
 }

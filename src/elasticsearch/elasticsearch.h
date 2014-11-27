@@ -5,6 +5,7 @@
 #include <sstream>
 #include <list>
 #include <mutex>
+#include <vector>
 
 #include "http/http.h"
 #include "json/json.h"
@@ -61,6 +62,9 @@ class ElasticSearch {
         /// Perform a scan to get all results from a query.
         int fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
 
+        // Bulk API
+        bool bulk(const char*, Json::Object& jResult);
+
     public:
         /// Delete given type (and all documents, mappings)
         bool deleteType(const std::string& index, const std::string& type);
@@ -87,6 +91,26 @@ class ElasticSearch {
 
         /// Read Only option, all index functions return false.
         bool _readOnly;
+};
+
+class BulkBuilder {
+	private:
+		std::vector<Json::Object> operations;
+
+		void createCommand(const std::string &op, const std::string &index, const std::string &type, const std::string &id);
+
+	public:
+		BulkBuilder();
+		void index(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields);
+		void create(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields);
+		void index(const std::string &index, const std::string &type, const Json::Object &fields);
+		void create(const std::string &index, const std::string &type, const Json::Object &fields);
+		void update(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields);
+		void del(const std::string &index, const std::string &type, const std::string &id);
+		void upsert(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields);
+		void clear();
+		std::string str();
+		bool isEmpty();
 };
 
 #endif // ELASTICSEARCH_H
