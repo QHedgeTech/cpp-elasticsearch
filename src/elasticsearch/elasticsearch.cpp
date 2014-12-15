@@ -386,27 +386,23 @@ void BulkBuilder::create(const std::string &index, const std::string &type, cons
 	operations.push_back(fields);
 }
 
-void BulkBuilder::update(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields) {
+void BulkBuilder::update(const std::string &index, const std::string &type, const std::string &id, const Json::Object &body) {
+    createCommand("update", index, type, id);
+    operations.push_back(body);
+}
+
+void BulkBuilder::update_doc(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields, bool upsert) {
 	createCommand("update", index, type, id);
 
 	Json::Object updateFields;
 	updateFields.addMemberByKey("doc", fields);
+    updateFields.addMemberByKey("doc_as_upsert", upsert);
 
 	operations.push_back(updateFields);
 }
 
 void BulkBuilder::del(const std::string &index, const std::string &type, const std::string &id) {
 	createCommand("delete", index, type, id);
-}
-
-void BulkBuilder::upsert(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields) {
-	createCommand("update", index, type, id);
-
-	Json::Object updateFields;
-	updateFields.addMemberByKey("doc", fields);
-	updateFields.addMemberByKey("doc_as_upsert", true);
-
-	operations.push_back(updateFields);
 }
 
 std::string BulkBuilder::str() {
