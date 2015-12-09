@@ -275,7 +275,10 @@ unsigned int HTTP::request(const char* method, const char* endUrl, const char* d
         EXCEPTION("Unknown exception.");
     }
 
-    jOutput->addMemberByKey("status", statusCode);
+    if (jOutput) {
+		jOutput->addMemberByKey("status", statusCode);
+	}
+
     result = OK;
     return statusCode;
 }
