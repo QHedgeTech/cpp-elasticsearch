@@ -330,12 +330,12 @@ void ElasticSearch::clearScroll(const std::string& scrollId) {
 }
 
 int ElasticSearch::fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize) {
+    resultArray.clear();
+    
     std::string scrollId;
     if (!initScroll(scrollId, index, type, query, scrollSize))
         return 0;
 
-    resultArray.clear();
-    
     size_t currentSize=0, newSize;
     while (scrollNext(scrollId, resultArray))
     {
