@@ -59,9 +59,6 @@ class ElasticSearch {
         /// Search API of ES. Specify the doc type.
         long search(const std::string& index, const std::string& type, const std::string& query, Json::Object& result);
 
-        /// Perform a scan to get all results from a query.
-        int fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
-
         // Bulk API
         bool bulk(const char*, Json::Object& jResult);
 
@@ -81,7 +78,23 @@ class ElasticSearch {
         
         /// Refresh the index.
         void refresh(const std::string& index);
-    
+
+    public:
+        /// Initialize a scroll search. Use the returned scroll id when calling scrollNext. Size is based on shardSize. Returns false on error
+        bool initScroll(std::string& scrollId, const std::string& index, const std::string& type, const std::string& query, int scrollSize = 1000);
+
+        /// Scroll to next matches of an initialized scroll search. scroll_id may be updated. End is reached when resultArray.empty() is true (in which scroll is automatically cleared). Returns false on error.
+        bool scrollNext(std::string& scrollId, Json::Array& resultArray);
+
+        /// Clear an initialized scroll search prior to its automatically 1 minute timeout
+        void clearScroll(const std::string& scrollId);
+
+        /// Perform a scan to get all results from a query.
+        int fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
+
+    private:
+        void appendHitsToArray(const Json::Object& msg, Json::Array& resultArray);
+
     private:
         /// Private constructor.
         ElasticSearch();

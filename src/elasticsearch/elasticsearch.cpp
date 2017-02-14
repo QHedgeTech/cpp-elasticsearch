@@ -99,45 +99,6 @@ bool ElasticSearch::deleteAll(const char* index, const char* type){
     return (msg["_indices"].getObject()[index].getObject()["_shards"].getObject()["failed"].getInt() == 0);
 }
 
-int ElasticSearch::fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize) {
-
-    // Get the scroll id
-    std::stringstream scrollUrl;
-    scrollUrl << index << "/" << type << "/_search?search_type=scan&scroll=10m&size=" << scrollSize;
-
-    Json::Object scrollObject;
-    _http.post(scrollUrl.str().c_str(),query.c_str(),&scrollObject);
-
-    if(!scrollObject.member("hits"))
-        EXCEPTION("Result corrupted, no member \"hits\".");
-
-    if(!scrollObject.getValue("hits").getObject().member("total"))
-        EXCEPTION("Result corrupted, no member \"total\" nested in \"hits\".");
-
-    int total = scrollObject.getValue("hits").getObject().getValue("total").getInt();
-
-    std::string scrollId = scrollObject["_scroll_id"].getString();
-    int count = 0;
-    while(count < total) {
-
-        Json::Object result;
-        _http.rawpost("_search/scroll?scroll=10m", scrollId.c_str(), &result);
-
-        // Kepp the new scroll id we received to inject in the next iteration.
-        scrollId = result["_scroll_id"].getString();
-
-        for(const Json::Value& value : result["hits"].getObject()["hits"].getArray()){
-            resultArray.addElement(value);
-            ++count;
-        }
-    }
-
-    if(count != total)
-        EXCEPTION("Result corrupted, total is different from count.");
-
-    return total;
-}
-
 // Request the document number of type T in index I.
 long unsigned int ElasticSearch::getDocumentCount(const char* index, const char* type){
     std::ostringstream oss;
@@ -339,6 +300,65 @@ void ElasticSearch::refresh(const std::string& index){
 
     Json::Object msg;
     _http.get(oss.str().c_str(), 0, &msg);
+}
+
+bool ElasticSearch::initScroll(std::string& scrollId, const std::string& index, const std::string& type, const std::string& query, int scrollSize) {
+    std::ostringstream oss;
+    oss << index << "/" << type << "/_search?scroll=1m&search_type=scan&size=" << scrollSize;
+
+    Json::Object msg;
+    if (200 != _http.post(oss.str().c_str(), query.c_str(), &msg))
+        return false;
+    
+    scrollId = msg["_scroll_id"].getString();
+    return true;
+}
+
+bool ElasticSearch::scrollNext(std::string& scrollId, Json::Array& resultArray) {
+    Json::Object msg;
+    if (200 != _http.post("/_search/scroll?scroll=1m", scrollId.c_str(), &msg))
+        return false;
+    
+    scrollId = msg["_scroll_id"].getString();
+    
+    appendHitsToArray(msg, resultArray);
+    return true;
+}
+
+void ElasticSearch::clearScroll(const std::string& scrollId) {
+    _http.remove("/_search/scroll", scrollId.c_str(), 0);
+}
+
+int ElasticSearch::fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize) {
+    resultArray.clear();
+    
+    std::string scrollId;
+    if (!initScroll(scrollId, index, type, query, scrollSize))
+        return 0;
+
+    size_t currentSize=0, newSize;
+    while (scrollNext(scrollId, resultArray))
+    {
+        newSize = resultArray.size();
+        if (currentSize == newSize)
+            break;
+        
+        currentSize = newSize;
+    }
+    return currentSize;
+}
+
+void ElasticSearch::appendHitsToArray(const Json::Object& msg, Json::Array& resultArray) {
+
+    if(!msg.member("hits"))
+        EXCEPTION("Result corrupted, no member \"hits\".");
+
+    if(!msg.getValue("hits").getObject().member("hits"))
+        EXCEPTION("Result corrupted, no member \"hits\" nested in \"hits\".");
+
+    for(const Json::Value& value : msg["hits"].getObject()["hits"].getArray()) {
+        resultArray.addElement(value);
+    }
 }
 
 // Bulk API of ES.
