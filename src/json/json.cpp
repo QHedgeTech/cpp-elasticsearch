@@ -285,41 +285,43 @@ const Json::Array& Json::Value::getArray() const{
     return *_array;
 }
 
-std::ostream& Json::operator<<(std::ostream& os, const Json::Value& value){
+namespace Json {
+    std::ostream& operator<<(std::ostream& os, const Value& value){
 
-    if(value._type == Value::objectType){
-        assert(value._object != 0);
-        os << *(value._object);
+        if(value._type == Value::objectType){
+            assert(value._object != 0);
+            os << *(value._object);
+            return os;
+        }
+
+        if(value._type == Value::arrayType){
+            assert(value._array != 0);
+            os << *(value._array);
+            return os;
+        }
+
+        if(value._type == Value::nullType){
+            os << "null";
+            return os;
+        }
+
+        if(value._type == Value::booleanType){
+            if(value)
+                os << "true";
+            else
+                os << "false";
+            return os;
+        }
+
+        if(value._type == Value::stringType){
+            os << "\"" << value._data << "\"";
+            return os;
+        }
+
+        assert(value._type == Value::numberType);
+        os << value._data;
         return os;
     }
-
-    if(value._type == Value::arrayType){
-        assert(value._array != 0);
-        os << *(value._array);
-        return os;
-    }
-
-    if(value._type == Value::nullType){
-        os << "null";
-        return os;
-    }
-
-    if(value._type == Value::booleanType){
-        if(value)
-            os << "true";
-        else
-            os << "false";
-        return os;
-    }
-
-    if(value._type == Value::stringType){
-        os << "\"" << value._data << "\"";
-        return os;
-    }
-
-    assert(value._type == Value::numberType);
-    os << value._data;
-    return os;
 }
 
 // Set this value as a boolean.
@@ -852,17 +854,19 @@ bool Json::Object::operator==(const Object& o) const {
 }
 
 // Output in Json format
-ostream& Json::operator<<(ostream& os, const Json::Object& obj){
-    os << "{";
-    for(std::map< Key, Value >::const_iterator it = obj._memberMap.begin(); it != obj._memberMap.end(); ){
-        os << "\"" << it->first << "\":" << it->second;
-        ++it;
-        if(it != obj._memberMap.end())
-            os << ",";
-    }
-    os << "}";
+namespace Json {
+    std::ostream& operator<<(std::ostream& os, const Object& obj){
+        os << "{";
+        for(std::map< Key, Value >::const_iterator it = obj._memberMap.begin(); it != obj._memberMap.end(); ){
+            os << "\"" << it->first << "\":" << it->second;
+            ++it;
+            if(it != obj._memberMap.end())
+                os << ",";
+        }
+        os << "}";
 
-    return os;
+        return os;
+    }
 }
 
 /*------------------- Json Array ------------------*/
@@ -941,20 +945,22 @@ bool Json::Array::operator==(const Array& a) const {
 }
 
 // Output in Json pretty format
-ostream& Json::operator<<(ostream& os, const Json::Array& array){
+namespace Json {
+    std::ostream& operator<<(std::ostream& os, const Array& array){
 
-    os << "[";
+        os << "[";
 
-    list<Value>::const_iterator it = array._elementList.begin();
-    if(it != array._elementList.end())
-        os << *it;
+        list<Value>::const_iterator it = array._elementList.begin();
+        if(it != array._elementList.end())
+            os << *it;
 
-    for(++it; it != array._elementList.end(); ++it)
-        os << "," << *it;
+        for(++it; it != array._elementList.end(); ++it)
+            os << "," << *it;
 
-    os << ']';
+        os << ']';
 
-    return os;
+        return os;
+    }
 }
 
 // Returns the data in Json Format.
