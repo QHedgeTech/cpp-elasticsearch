@@ -160,20 +160,13 @@ bool Json::Value::getBoolean() const {
     switch(_type){
         case booleanType:
             assert(!_data.empty());
-            if(_data[0] == 't')
-                return true;
-            else
-                return false;
+            return (_data[0] == 't');
 
         case numberType:
-            if(getInt() != 0)
-                return true;
+            return (getInt() != 0);
 
         case stringType:
-            if(_data == "true")
-                return true;
-            if(_data == "false")
-                return false;
+            return (_data == "true");
 
         case nullType:
             return false;
