@@ -18,7 +18,7 @@ Once the required features will be added, new features will come like:
 - Library package
 - Performance monitoring
 
-A documentation is stil to come as well as a "get started" page and continous intragration project with Travis.
+A documentation is still to come as well as a "get started" page and continous intragration project with Travis.
 
 ## Get Source and Build ##
 
