@@ -65,6 +65,7 @@ class Value {
         Value();
         Value(const Value& val);
         ~Value();
+        Value& operator=(const Value& other) = default;
 
         const char* showType() const;
         const char* read(const char* pStart, const char* pEnd);
