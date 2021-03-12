@@ -146,11 +146,14 @@ bool ElasticSearch::index(const std::string& index, const std::string& type, con
     Json::Object result;
     _http.put(url.str().c_str(), data.str().c_str(), &result);
 
-    if(!result.member("created"))
-        EXCEPTION("The index induces error.");
-
-    if(result.getValue("created"))
+    
+    if (result.member("created") && result.getValue("created")) {
         return true;
+    } else if (result.member("result") && result.getValue("result").getString().compare("created")==0) {
+        return true;
+    }
+
+    EXCEPTION("The index induces error.");
 
     std::cout << "endPoint: " << index << "/" << type << "/" << id << std::endl;
     std::cout << "jData" << jData.pretty() << std::endl;
@@ -175,7 +178,8 @@ std::string ElasticSearch::index(const std::string& index, const std::string& ty
     Json::Object result;
     _http.post(url.str().c_str(), data.str().c_str(), &result);
 
-    if(!result.member("created") || !result.getValue("created")){
+    if ((!result.member("created") || !result.getValue("created")) &&
+        (!result.member("result") || result.getValue("result").getString().compare("created")!=0)) {
         std::cout << "url: " << url.str() << std::endl;
         std::cout << "data: " << data.str() << std::endl;
         std::cout << "result: " << result.str() << std::endl;
