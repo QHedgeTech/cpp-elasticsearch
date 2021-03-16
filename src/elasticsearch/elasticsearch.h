@@ -20,6 +20,9 @@ class ElasticSearch {
          /// Test connection with node.
         bool isActive();
 
+        int getMajorVersion();
+        const std::string& getVersionString();
+        
         /// Request document number of type T in index I.
         long unsigned int getDocumentCount(const char* index, const char* type);
 
@@ -81,6 +84,8 @@ class ElasticSearch {
 
     public:
         /// Initialize a scroll search. Use the returned scroll id when calling scrollNext. Size is based on shardSize. Returns false on error
+        bool initScroll(std::string& scrollId, const std::string& index, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
+        /// DEPRECATED
         bool initScroll(std::string& scrollId, const std::string& index, const std::string& type, const std::string& query, int scrollSize = 1000);
 
         /// Scroll to next matches of an initialized scroll search. scroll_id may be updated. End is reached when resultArray.empty() is true (in which scroll is automatically cleared). Returns false on error.
@@ -90,6 +95,8 @@ class ElasticSearch {
         void clearScroll(const std::string& scrollId);
 
         /// Perform a scan to get all results from a query.
+        int fullScan(const std::string& index, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
+        /// DEPRECATED
         int fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
 
     private:
@@ -98,6 +105,10 @@ class ElasticSearch {
     private:
         /// Private constructor.
         ElasticSearch();
+        
+        void readVersionString();
+        
+        std::string _versionString;
 
         /// HTTP Connexion module.
         HTTP _http;

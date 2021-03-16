@@ -49,6 +49,26 @@ bool ElasticSearch::isActive() {
     return true;
 }
 
+void ElasticSearch::readVersionString(){
+    Json::Object msg;
+    if (200 == _http.get("", 0, &msg)){
+        if (msg.member("version") && msg["version"].getObject().member("number")){
+            _versionString = msg["version"].getObject()["number"].getString();
+        }
+    }
+}
+
+int ElasticSearch::getMajorVersion(){
+    return std::stoi(getVersionString());
+}
+
+const std::string& ElasticSearch::getVersionString(){
+    if (_versionString.empty()) {
+        readVersionString();
+    }
+    return _versionString;
+}
+
 // Request the document by index/type/id.
 bool ElasticSearch::getDocument(const char* index, const char* type, const char* id, Json::Object& msg){
     std::ostringstream oss;
@@ -306,22 +326,64 @@ void ElasticSearch::refresh(const std::string& index){
     _http.get(oss.str().c_str(), 0, &msg);
 }
 
-bool ElasticSearch::initScroll(std::string& scrollId, const std::string& index, const std::string& type, const std::string& query, int scrollSize) {
+bool ElasticSearch::initScroll(std::string& scrollId, const std::string& index, const std::string& query, Json::Array& resultArray, int scrollSize) {
+    if (getMajorVersion() < 7){
+        EXCEPTION("Please use initScroll for the older version of ElasticSearch.");
+    }
+
     std::ostringstream oss;
-    oss << index << "/" << type << "/_search?scroll=1m&search_type=scan&size=" << scrollSize;
+    oss << index << "/_search?scroll=1m&size=" << scrollSize;
 
     Json::Object msg;
     if (200 != _http.post(oss.str().c_str(), query.c_str(), &msg))
         return false;
     
     scrollId = msg["_scroll_id"].getString();
+
+    appendHitsToArray(msg, resultArray);
     return true;
+}
+
+bool ElasticSearch::initScroll(std::string& scrollId, const std::string& index, const std::string& type, const std::string& query, int scrollSize) {
+    if (getMajorVersion() < 7){
+        std::ostringstream oss;
+        oss << index << "/" << type << "/_search?scroll=1m&search_type=scan&size=" << scrollSize;
+
+        Json::Object msg;
+        if (200 != _http.post(oss.str().c_str(), query.c_str(), &msg))
+            return false;
+        
+        scrollId = msg["_scroll_id"].getString();
+
+        return true;
+    }
+    else
+    {
+        Json::Array resultArray;
+        bool retVal = initScroll(scrollId, index, query, resultArray, scrollSize);
+        if (retVal && !resultArray.empty()){
+            printf("Please upgrade to new initScroll function to avoid missing search results\n");
+        }
+        return retVal;
+    }
 }
 
 bool ElasticSearch::scrollNext(std::string& scrollId, Json::Array& resultArray) {
     Json::Object msg;
-    if (200 != _http.post("/_search/scroll?scroll=1m", scrollId.c_str(), &msg))
-        return false;
+
+    if (getMajorVersion() < 7){
+        if (200 != _http.post("/_search/scroll?scroll=1m", scrollId.c_str(), &msg))
+            return false;
+    }
+    else
+    {
+        Json::Object body;
+        body.addMemberByKey("scroll", "1m");
+        body.addMemberByKey("scroll_id", scrollId);
+
+        if (200 != _http.post("_search/scroll", body.str().c_str(), &msg))
+            return false;
+    }
     
     scrollId = msg["_scroll_id"].getString();
     
@@ -333,14 +395,25 @@ void ElasticSearch::clearScroll(const std::string& scrollId) {
     _http.remove("/_search/scroll", scrollId.c_str(), 0);
 }
 
+int ElasticSearch::fullScan(const std::string& index, const std::string& query, Json::Array& resultArray, int scrollSize) {
+    return fullScan(index, "", query, resultArray, scrollSize);
+}
+
 int ElasticSearch::fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize) {
     resultArray.clear();
     
     std::string scrollId;
-    if (!initScroll(scrollId, index, type, query, scrollSize))
-        return 0;
+    if (getMajorVersion() < 7){
+        if (!initScroll(scrollId, index, type, query, scrollSize))
+            return 0;
+    }
+    else
+    {
+        if (!initScroll(scrollId, index, query, resultArray, scrollSize))
+            return 0;
+    }
 
-    size_t currentSize=0, newSize;
+    size_t currentSize=resultArray.size(), newSize;
     while (scrollNext(scrollId, resultArray))
     {
         newSize = resultArray.size();
