@@ -166,11 +166,16 @@ bool ElasticSearch::index(const std::string& index, const std::string& type, con
     Json::Object result;
     _http.put(url.str().c_str(), data.str().c_str(), &result);
 
-    
-    if (result.member("created") && result.getValue("created")) {
-        return true;
-    } else if (result.member("result") && result.getValue("result").getString().compare("created")==0) {
-        return true;
+    if (getMajorVersion() < 7){
+        if (result.member("created") && result.getValue("created")) {
+            return true;
+        }
+    }
+    else
+    {
+        if (result.member("result") && result.getValue("result").getString().compare("created")==0) {
+            return true;
+        }
     }
 
     EXCEPTION("The index induces error.");
@@ -273,10 +278,20 @@ bool ElasticSearch::upsert(const std::string& index, const std::string& type, co
 }
 
 /// Search API of ES.
+long ElasticSearch::search(const std::string& index, const std::string& query, Json::Object& result){
+    return search(index, "", query, result);
+}
+
 long ElasticSearch::search(const std::string& index, const std::string& type, const std::string& query, Json::Object& result){
 
     std::stringstream url;
-    url << index << "/" << type << "/_search";
+    if (getMajorVersion() < 7){
+        url << index << "/" << type << "/_search";
+    }
+    else
+    {
+        url << index << "/_search";
+    }
 
 
     _http.post(url.str().c_str(), query.c_str(), &result);
@@ -292,7 +307,13 @@ long ElasticSearch::search(const std::string& index, const std::string& type, co
         EXCEPTION("Search timed out.");
     }
 
-    return result.getValue("hits").getObject().getValue("total").getLong();
+    if (getMajorVersion() < 7){
+        return result.getValue("hits").getObject().getValue("total").getLong();
+    }
+    else
+    {
+        return result.getValue("hits").getObject().getValue("total").getObject().getValue("value").getLong();
+    }
 }
 
 /// Delete given type (and all documents, mappings)

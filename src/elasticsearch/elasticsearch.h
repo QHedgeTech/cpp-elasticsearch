@@ -60,6 +60,8 @@ class ElasticSearch {
         bool upsert(const std::string& index, const std::string& type, const std::string& id, const Json::Object& jData);
 
         /// Search API of ES. Specify the doc type.
+        long search(const std::string& index, const std::string& query, Json::Object& result);
+        /// DEPRECATED
         long search(const std::string& index, const std::string& type, const std::string& query, Json::Object& result);
 
         // Bulk API
