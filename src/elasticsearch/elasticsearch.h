@@ -20,51 +20,50 @@ class ElasticSearch {
          /// Test connection with node.
         bool isActive();
 
+        int getMajorVersion();
+        const std::string& getVersionString();
+        
         /// Request document number of type T in index I.
-        long unsigned int getDocumentCount(const char* index, const char* type);
+        long unsigned int getDocumentCount(const char* index);
 
         /// Request the document by index/type/id.
-        bool getDocument(const char* index, const char* type, const char* id, Json::Object& msg);
+        bool getDocument(const char* index, const char* id, Json::Object& msg);
 
         /// Request the document by index/type/ query key:value.
-        void getDocument(const std::string& index, const std::string& type, const std::string& key, const std::string& value, Json::Object& msg);
+        void getDocument(const std::string& index, const std::string& key, const std::string& value, Json::Object& msg);
 
         /// Delete the document by index/type/id.
-        bool deleteDocument(const char* index, const char* type, const char* id);
+        bool deleteDocument(const char* index, const char* id);
 
         /// Delete the document by index/type.
-        bool deleteAll(const char* index, const char* type);
+        bool deleteAll(const char* index);
 
 		/// Test if document exists
-        bool exist(const std::string& index, const std::string& type, const std::string& id);
+        bool exist(const std::string& index, const std::string& id);
 
         /// Get Id of document
-        bool getId(const std::string& index, const std::string& type, const std::string& key, const std::string& value, std::string& id);
+        bool getId(const std::string& index, const std::string& key, const std::string& value, std::string& id);
 
         /// Index a document.
-        bool index(const std::string& index, const std::string& type, const std::string& id, const Json::Object& jData);
+        bool index(const std::string& index, const std::string& id, const Json::Object& jData);
 
         /// Index a document with automatic id creation
-        std::string index(const std::string& index, const std::string& type, const Json::Object& jData);
+        std::string index(const std::string& index, const Json::Object& jData);
 
         /// Update a document field.
-        bool update(const std::string& index, const std::string& type, const std::string& id, const std::string& key, const std::string& value);
+        bool update(const std::string& index, const std::string& id, const std::string& key, const std::string& value);
 
         /// Update doccument fields.
-        bool update(const std::string& index, const std::string& type, const std::string& id, const Json::Object& jData);
+        bool update(const std::string& index, const std::string& id, const Json::Object& jData);
 
         /// Update or insert if the document does not already exists.
-        bool upsert(const std::string& index, const std::string& type, const std::string& id, const Json::Object& jData);
+        bool upsert(const std::string& index, const std::string& id, const Json::Object& jData);
 
         /// Search API of ES. Specify the doc type.
-        long search(const std::string& index, const std::string& type, const std::string& query, Json::Object& result);
+        long search(const std::string& index, const std::string& query, Json::Object& result);
 
         // Bulk API
         bool bulk(const char*, Json::Object& jResult);
-
-    public:
-        /// Delete given type (and all documents, mappings)
-        bool deleteType(const std::string& index, const std::string& type);
 
     public:
         /// Test if index exists
@@ -81,7 +80,7 @@ class ElasticSearch {
 
     public:
         /// Initialize a scroll search. Use the returned scroll id when calling scrollNext. Size is based on shardSize. Returns false on error
-        bool initScroll(std::string& scrollId, const std::string& index, const std::string& type, const std::string& query, int scrollSize = 1000);
+        bool initScroll(std::string& scrollId, const std::string& index, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
 
         /// Scroll to next matches of an initialized scroll search. scroll_id may be updated. End is reached when resultArray.empty() is true (in which scroll is automatically cleared). Returns false on error.
         bool scrollNext(std::string& scrollId, Json::Array& resultArray);
@@ -90,7 +89,7 @@ class ElasticSearch {
         void clearScroll(const std::string& scrollId);
 
         /// Perform a scan to get all results from a query.
-        int fullScan(const std::string& index, const std::string& type, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
+        int fullScan(const std::string& index, const std::string& query, Json::Array& resultArray, int scrollSize = 1000);
 
     private:
         void appendHitsToArray(const Json::Object& msg, Json::Array& resultArray);
@@ -98,6 +97,10 @@ class ElasticSearch {
     private:
         /// Private constructor.
         ElasticSearch();
+        
+        void readVersionString();
+        
+        std::string _versionString;
 
         /// HTTP Connexion module.
         HTTP _http;
@@ -110,19 +113,27 @@ class BulkBuilder {
 	private:
 		std::vector<Json::Object> operations;
 
-		void createCommand(const std::string &op, const std::string &index, const std::string &type, const std::string &id);
+		void createCommand(const std::string &op, const std::string &index, const std::string &id);
 
 	public:
 		BulkBuilder();
-		void index(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields);
-		void create(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields);
-		void index(const std::string &index, const std::string &type, const Json::Object &fields);
-		void create(const std::string &index, const std::string &type, const Json::Object &fields);
-		void update(const std::string &index, const std::string &type, const std::string &id, const Json::Object &body);
-        void update_doc(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields, bool update = false);
-		void del(const std::string &index, const std::string &type, const std::string &id);
-		void upsert(const std::string &index, const std::string &type, const std::string &id, const Json::Object &fields);
-		void clear();
+		void index(const std::string &index, const std::string &id, const Json::Object &fields);
+		
+        void create(const std::string &index, const std::string &id, const Json::Object &fields);
+		
+        void index(const std::string &index, const Json::Object &fields);
+		
+        void create(const std::string &index, const Json::Object &fields);
+		
+        void update(const std::string &index, const std::string &id, const Json::Object &body);
+        
+        void update_doc(const std::string &index, const std::string &id, const Json::Object &fields, bool update = false);
+		
+        void del(const std::string &index, const std::string &id);
+		
+        void upsert(const std::string &index, const std::string &id, const Json::Object &fields);
+		
+        void clear();
 		std::string str();
 		bool isEmpty();
 };

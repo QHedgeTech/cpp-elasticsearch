@@ -65,6 +65,7 @@ class Value {
         Value();
         Value(const Value& val);
         ~Value();
+        Value& operator=(const Value& other) = default;
 
         const char* showType() const;
         const char* read(const char* pStart, const char* pEnd);
@@ -130,6 +131,9 @@ class Value {
 
         /// Set this value as an int.
         void setLong(long l);
+
+        /// append element to existing array.
+        void appendArrayElement(const Json::Value& val);
 
         /// Give access to member for this operator.
         friend std::ostream& operator<<(std::ostream& os, const Value& value);
@@ -212,6 +216,9 @@ class Object {
 
         /// Append another object to this one.
         void append(const Object& obj);
+
+        /// append element to array.
+        void appendArrayElement(const std::string& key, const Json::Value& val);
 
         /// Return the value of the member[key], key must exist in the map.
         const Value& getValue(const std::string& key) const;

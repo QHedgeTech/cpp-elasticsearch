@@ -734,13 +734,13 @@ unsigned int HTTP::parseMessage(std::string& output, size_t& contentLength, bool
             size_t headerSize = endHeader + 4 - recvline;
 
             // Extract and interpret the header.
-            char* contentLenghtPos = strstr(endStatus+2,"Content-Length:");
+            char* contentLenghtPos = strcasestr(endStatus+2,"Content-Length:");
 
             // If we've got the content-length.
             if(contentLenghtPos == NULL){
 
                 // If the message is chunked, restart the method with the flag on.
-                if( strstr(endStatus+2,"Transfer-Encoding: chunked") != NULL ){
+                if( strcasestr(endStatus+2,"Transfer-Encoding: chunked") != NULL ){
                     // Set the transfer as chunked.
                     isChunked = true;
 

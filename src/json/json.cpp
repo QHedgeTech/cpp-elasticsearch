@@ -390,6 +390,13 @@ void Json::Value::setArray(const Json::Array& array){
     _data = array.str();
 }
 
+void Json::Value::appendArrayElement(const Json::Value& val)
+{
+    assert(_type == arrayType && _array != 0);
+    _array->addElement(val);
+    _data = _array->str();
+}
+
 const char* Json::Value::read(const char* pCursor, const char* pEnd){
 
     // Call this function only once.
@@ -795,6 +802,20 @@ void Json::Object::append(const Json::Object& obj){
             throw std::logic_error("Cannot merge objects: one key appears in both.");
 
         _memberMap.insert(std::make_pair(cit->first, cit->second));
+    }
+}
+
+void Json::Object::appendArrayElement(const std::string& key, const Json::Value& val)
+{
+    if (!member(key))
+    {
+        Json::Array array;
+        array.addElement(val);
+        addMemberByKey(key, array);
+    }
+    else
+    {
+        const_cast<Json::Value&>(getValue(key)).appendArrayElement(val);
     }
 }
 
